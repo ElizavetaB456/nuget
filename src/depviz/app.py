@@ -6,6 +6,7 @@ from depviz.cli import ConfigError, parse_args
 from depviz.graph import build_graph
 from depviz.nuget import NuGetSource, RepositoryError
 from depviz.order import load_order
+from depviz.plantuml import render, show, to_plantuml
 from depviz.testrepo import TestRepoSource
 
 EXIT_OK = 0
@@ -51,13 +52,25 @@ def print_load_order(graph):
         print(f"  {number}. {_label(graph.nodes[name])}{mark}")
 
 
+def visualize(graph, config):
+    """Вывести PlantUML-описание графа и показать изображение."""
+    text = to_plantuml(graph)
+    print(text, end="")
+    target = render(text, config.output or f"out/{graph.root}.puml")
+    print(f"Изображение графа: {target}")
+    if config.show:
+        show(target)
+
+
 def run(config):
     """Выполнить анализ согласно параметрам."""
     source = make_source(config)
     version = source.check_version(config.package, config.version)
     graph = build_graph(source, config.package, version,
                         config.max_depth, config.filter)
-    if config.load_order:
+    if config.uml:
+        visualize(graph, config)
+    elif config.load_order:
         print_load_order(graph)
     else:
         print_graph(graph)

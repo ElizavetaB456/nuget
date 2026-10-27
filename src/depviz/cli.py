@@ -29,6 +29,9 @@ class Config:
     max_depth: int
     filter: str
     load_order: bool = False
+    uml: bool = False
+    output: str = ""
+    show: bool = True
 
     def as_pairs(self):
         """Вернуть параметры в виде списка пар (ключ, значение)."""
@@ -87,6 +90,14 @@ def build_parser():
                              "не анализируются")
     parser.add_argument("-l", "--load-order", action="store_true",
                         help="вывести порядок загрузки зависимостей")
+    parser.add_argument("-u", "--uml", action="store_true",
+                        help="вывести граф на языке PlantUML и показать "
+                             "изображение")
+    parser.add_argument("-o", "--output", default="",
+                        help="путь к файлу .puml (по умолчанию "
+                             "out/<пакет>.puml)")
+    parser.add_argument("--no-show", action="store_true",
+                        help="не открывать изображение")
     return parser
 
 
@@ -134,9 +145,20 @@ def _check_filter(config):
             f"фильтр '{config.filter}' исключает сам анализируемый пакет")
 
 
+def _check_output(config):
+    """Проверить путь к файлу диаграммы."""
+    if config.output and not config.output.endswith(".puml"):
+        raise ConfigError(
+            f"файл диаграммы должен иметь расширение .puml: "
+            f"'{config.output}'")
+    if config.output and not config.uml:
+        raise ConfigError("опция --output используется только с --uml")
+
+
 def validate(config):
     """Проверить согласованность параметров. Бросает ConfigError."""
     _check_package(config)
+    _check_output(config)
     _check_repo(config)
     _check_version(config)
     _check_filter(config)
@@ -154,5 +176,8 @@ def parse_args(argv):
         max_depth=args.max_depth,
         filter=args.filter,
         load_order=args.load_order,
+        uml=args.uml,
+        output=args.output.strip(),
+        show=not args.no_show,
     )
     return validate(config)
