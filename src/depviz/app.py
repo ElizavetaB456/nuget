@@ -5,6 +5,7 @@ import sys
 from depviz.cli import ConfigError, parse_args
 from depviz.graph import build_graph
 from depviz.nuget import NuGetSource, RepositoryError
+from depviz.order import load_order
 from depviz.testrepo import TestRepoSource
 
 EXIT_OK = 0
@@ -41,13 +42,25 @@ def print_graph(graph):
         print("Циклическая зависимость: " + " -> ".join(cycle))
 
 
+def print_load_order(graph):
+    """Вывести порядок загрузки зависимостей."""
+    result = load_order(graph)
+    print(f"Порядок загрузки зависимостей для {graph.root}:")
+    for number, name in enumerate(result.order, 1):
+        mark = " (разрыв цикла)" if name in result.cycle_breaks else ""
+        print(f"  {number}. {_label(graph.nodes[name])}{mark}")
+
+
 def run(config):
     """Выполнить анализ согласно параметрам."""
     source = make_source(config)
     version = source.check_version(config.package, config.version)
     graph = build_graph(source, config.package, version,
                         config.max_depth, config.filter)
-    print_graph(graph)
+    if config.load_order:
+        print_load_order(graph)
+    else:
+        print_graph(graph)
 
 
 def main(argv):

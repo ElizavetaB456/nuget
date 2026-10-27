@@ -28,6 +28,7 @@ class Config:
     version: str
     max_depth: int
     filter: str
+    load_order: bool = False
 
     def as_pairs(self):
         """Вернуть параметры в виде списка пар (ключ, значение)."""
@@ -84,6 +85,8 @@ def build_parser():
     parser.add_argument("-f", "--filter", default="",
                         help="подстрока: пакеты, содержащие её в имени, "
                              "не анализируются")
+    parser.add_argument("-l", "--load-order", action="store_true",
+                        help="вывести порядок загрузки зависимостей")
     return parser
 
 
@@ -150,5 +153,6 @@ def parse_args(argv):
         version=args.version.strip(),
         max_depth=args.max_depth,
         filter=args.filter,
+        load_order=args.load_order,
     )
     return validate(config)
