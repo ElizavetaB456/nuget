@@ -3,22 +3,51 @@
 import sys
 
 from depviz.cli import ConfigError, parse_args
+from depviz.graph import build_graph
 from depviz.nuget import NuGetSource, RepositoryError
+from depviz.testrepo import TestRepoSource
 
 EXIT_OK = 0
 EXIT_REPO_ERROR = 1
 EXIT_CONFIG_ERROR = 2
 
 
-def print_direct(config, source):
-    """Вывести прямые зависимости заданного пакета."""
+def make_source(config):
+    """Создать источник зависимостей в зависимости от режима."""
+    if config.test_mode:
+        return TestRepoSource(config.repo)
+    return NuGetSource(config.repo)
+
+
+def _label(node):
+    """Подпись вершины: имя и версия (если есть)."""
+    return f"{node.name} {node.version}".strip()
+
+
+def print_graph(graph):
+    """Вывести граф зависимостей в виде списков смежности."""
+    print(f"Граф зависимостей {graph.root} "
+          f"(максимальная глубина {graph.max_depth}):")
+    for name, node in graph.nodes.items():
+        if name in graph.unexpanded:
+            print(f"  [{node.depth}] {_label(node)} -> ... "
+                  "(не раскрыт: достигнута максимальная глубина)")
+            continue
+        deps = ", ".join(graph.edges.get(name, [])) or "(нет)"
+        print(f"  [{node.depth}] {_label(node)} -> {deps}")
+    if graph.filtered:
+        print("Исключены фильтром: " + ", ".join(sorted(graph.filtered)))
+    for cycle in graph.cycles:
+        print("Циклическая зависимость: " + " -> ".join(cycle))
+
+
+def run(config):
+    """Выполнить анализ согласно параметрам."""
+    source = make_source(config)
     version = source.check_version(config.package, config.version)
-    deps = source.direct_dependencies(config.package, version)
-    print(f"Прямые зависимости {config.package} {version}:")
-    if not deps:
-        print("  (нет)")
-    for dep in deps:
-        print(f"  {dep.name} {dep.range_text or '*'} -> {dep.version}")
+    graph = build_graph(source, config.package, version,
+                        config.max_depth, config.filter)
+    print_graph(graph)
 
 
 def main(argv):
@@ -28,11 +57,8 @@ def main(argv):
     except ConfigError as error:
         print(f"Ошибка параметров: {error}", file=sys.stderr)
         return EXIT_CONFIG_ERROR
-    if config.test_mode:
-        print("Тестовый режим будет поддержан на этапе 3.")
-        return EXIT_OK
     try:
-        print_direct(config, NuGetSource(config.repo))
+        run(config)
     except RepositoryError as error:
         print(f"Ошибка репозитория: {error}", file=sys.stderr)
         return EXIT_REPO_ERROR

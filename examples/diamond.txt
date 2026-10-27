@@ -1,0 +1,6 @@
+# Ромбовидные зависимости и общий «нижний» пакет
+APP: WEB DATA
+WEB: CORE LOG
+DATA: CORE LOG
+LOG: CORE
+CORE:
