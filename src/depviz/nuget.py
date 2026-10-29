@@ -9,7 +9,7 @@
 import json
 import urllib.error
 import urllib.request
-import xml.etree.ElementTree as ElementTree
+import xml.etree.ElementTree as etree
 from dataclasses import dataclass
 
 from depviz import versions
@@ -57,8 +57,8 @@ def parse_nuspec(xml_text):
     берётся объединение групп (первое вхождение id).
     """
     try:
-        root = ElementTree.fromstring(xml_text)
-    except ElementTree.ParseError as error:
+        root = etree.fromstring(xml_text)
+    except etree.ParseError as error:
         raise RepositoryError(f"некорректный .nuspec: {error}") from None
     result, seen = [], set()
     for node in root.iter():

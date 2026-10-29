@@ -58,7 +58,7 @@ def positive_int(text):
     return value
 
 
-class _Parser(argparse.ArgumentParser):
+class ErrorRaisingParser(argparse.ArgumentParser):
     """Парсер, сообщающий об ошибках исключением ConfigError."""
 
     def error(self, message):
@@ -68,7 +68,7 @@ class _Parser(argparse.ArgumentParser):
 
 def build_parser():
     """Создать парсер аргументов командной строки."""
-    parser = _Parser(
+    parser = ErrorRaisingParser(
         prog="depviz",
         description="Визуализация графа зависимостей пакетов NuGet.")
     parser.add_argument("-p", "--package", required=True,

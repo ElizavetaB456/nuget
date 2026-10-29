@@ -26,7 +26,7 @@ class DependencyGraph:
     cycles: list = field(default_factory=list)
 
 
-class _Names:
+class NameTable:
     """Приведение имён пакетов NuGet (регистронезависимых) к одному виду."""
 
     def __init__(self):
@@ -45,7 +45,7 @@ def build_graph(source, root, version, max_depth, substring=""):
     в анализ не включаются. Каждый пакет раскрывается один раз, поэтому
     циклические зависимости не приводят к зацикливанию.
     """
-    names, needle = _Names(), substring.lower()
+    names, needle = NameTable(), substring.lower()
     graph = DependencyGraph(names.canon(root), max_depth)
     graph.nodes[graph.root] = Node(graph.root, version, 0)
     queue = deque([graph.nodes[graph.root]])

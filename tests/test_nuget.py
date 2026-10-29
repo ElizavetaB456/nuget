@@ -18,19 +18,20 @@ MULTI_GROUP = f"""<package xmlns="{NS}">
 </dependencies></metadata></package>"""
 
 
+def make_source():
+    """Источник NuGet поверх поддельного репозитория."""
+    fake = FakeRepo({
+        ("Root", "1.0.0"): [("Lib", "[1.0.0, )"), ("Util", "2.0")],
+        ("Lib", "0.9.0"): [],
+        ("Lib", "1.0.0"): [],
+        ("Lib", "1.5.0"): [],
+        ("Util", "2.1.0"): [],
+    })
+    return NuGetSource(INDEX_URL, fetch=fake)
+
+
 class NuGetTest(unittest.TestCase):
     """Разбор .nuspec и обращение к API v3."""
-
-    def setUp(self):
-        """Подготовить поддельный репозиторий."""
-        self.fake = FakeRepo({
-            ("Root", "1.0.0"): [("Lib", "[1.0.0, )"), ("Util", "2.0")],
-            ("Lib", "0.9.0"): [],
-            ("Lib", "1.0.0"): [],
-            ("Lib", "1.5.0"): [],
-            ("Util", "2.1.0"): [],
-        })
-        self.source = NuGetSource(INDEX_URL, fetch=self.fake)
 
     def test_parse_groups(self):
         """Группы объединяются, дубликаты id убираются."""
@@ -39,18 +40,18 @@ class NuGetTest(unittest.TestCase):
 
     def test_service_index(self):
         """Адрес flat container берётся из индекса сервиса."""
-        self.assertEqual(self.source.base_address(), BASE)
+        self.assertEqual(make_source().base_address(), BASE)
 
     def test_direct(self):
         """Версии зависимостей — минимальные подходящие."""
-        deps = self.source.direct_dependencies("Root", "1.0")
+        deps = make_source().direct_dependencies("Root", "1.0")
         got = [(dep.name, dep.version) for dep in deps]
         self.assertEqual(got, [("Lib", "1.0.0"), ("Util", "2.1.0")])
 
     def test_missing_version(self):
         """Несуществующая версия — ошибка."""
         with self.assertRaises(RepositoryError):
-            self.source.check_version("Root", "9.9.9")
+            make_source().check_version("Root", "9.9.9")
 
     def test_bad_xml(self):
         """Некорректный XML — ошибка репозитория."""

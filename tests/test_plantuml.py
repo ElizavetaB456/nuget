@@ -20,27 +20,27 @@ def decode(code):
     return zlib.decompressobj(-zlib.MAX_WBITS).decompress(data).decode()
 
 
+def sample_text():
+    """PlantUML-текст графа с циклом, фильтром и ограничением глубины."""
+    src = DictSource("A: B XC\nB: A D\nD: E\nE:")
+    return plantuml.to_plantuml(build_graph(src, "A", "", 2, "X"))
+
+
 class PlantUmlTest(unittest.TestCase):
     """Текст диаграммы, кодирование и получение изображения."""
 
-    def setUp(self):
-        """Построить граф с циклом, фильтром и ограничением глубины."""
-        src = DictSource("A: B XC\nB: A D\nD: E\nE:")
-        self.graph = build_graph(src, "A", "", 2, "X")
-        self.text = plantuml.to_plantuml(self.graph)
-
     def test_text(self):
         """Вершины, рёбра, цикл и легенда присутствуют."""
-        self.assertTrue(self.text.startswith("@startuml"))
-        self.assertIn('rectangle "A" as n0 #LightSkyBlue', self.text)
-        self.assertIn("n0 -[#red,bold]-> n1", self.text)
-        self.assertIn("n1 --> n2", self.text)
-        self.assertIn("Исключены фильтром: XC", self.text)
-        self.assertNotIn('"E"', self.text)
+        self.assertTrue(sample_text().startswith("@startuml"))
+        self.assertIn('rectangle "A" as n0 #LightSkyBlue', sample_text())
+        self.assertIn("n0 -[#red,bold]-> n1", sample_text())
+        self.assertIn("n1 --> n2", sample_text())
+        self.assertIn("Исключены фильтром: XC", sample_text())
+        self.assertNotIn('"E"', sample_text())
 
     def test_unexpanded_style(self):
         """Нераскрытые вершины рисуются пунктиром."""
-        self.assertIn('"D" as n2 #WhiteSmoke;line.dashed', self.text)
+        self.assertIn('"D" as n2 #WhiteSmoke;line.dashed', sample_text())
 
     def test_known_encoding(self):
         """Кодирование совпадает с примером из документации PlantUML."""
@@ -49,7 +49,7 @@ class PlantUmlTest(unittest.TestCase):
 
     def test_roundtrip(self):
         """Закодированный текст декодируется обратно."""
-        self.assertEqual(decode(plantuml.encode(self.text)), self.text)
+        self.assertEqual(decode(plantuml.encode(sample_text())), sample_text())
 
     def test_render_fallback(self):
         """Без локального PlantUML возвращается URL сервера."""
@@ -57,7 +57,7 @@ class PlantUmlTest(unittest.TestCase):
                 mock.patch.object(plantuml.shutil, "which",
                                   return_value=None):
             path = os.path.join(tmp, "out", "g.puml")
-            target = plantuml.render(self.text, path)
+            target = plantuml.render(sample_text(), path)
             self.assertTrue(os.path.isfile(path))
         self.assertTrue(target.startswith(plantuml.SERVER_URL))
 

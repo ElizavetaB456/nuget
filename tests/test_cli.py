@@ -12,14 +12,15 @@ REPO = "https://api.nuget.org/v3/index.json"
 class ParseArgsTest(unittest.TestCase):
     """Проверка разбора и валидации параметров."""
 
-    def setUp(self):
-        """Создать временный файл тестового репозитория."""
-        handle, self.path = tempfile.mkstemp(suffix=".txt")
-        os.close(handle)
+    def temp_repo(self):
+        """Создать временный файл тестового репозитория.
 
-    def tearDown(self):
-        """Удалить временный файл."""
-        os.remove(self.path)
+        Файл удаляется автоматически после завершения теста.
+        """
+        handle, path = tempfile.mkstemp(suffix=".txt")
+        os.close(handle)
+        self.addCleanup(os.remove, path)
+        return path
 
     def test_full_config(self):
         """Корректные параметры разбираются без ошибок."""
@@ -31,7 +32,7 @@ class ParseArgsTest(unittest.TestCase):
 
     def test_test_mode(self):
         """В тестовом режиме версия не обязательна."""
-        config = parse_args(["-p", "A", "-r", self.path, "-t"])
+        config = parse_args(["-p", "A", "-r", self.temp_repo(), "-t"])
         self.assertTrue(config.test_mode)
         self.assertEqual(config.version, "")
 
@@ -47,7 +48,7 @@ class ParseArgsTest(unittest.TestCase):
     def test_bad_package(self):
         """Имя пакета проверяется."""
         self.assert_error(["-p", "bad name", "-r", REPO, "-v", "1.0"])
-        self.assert_error(["-p", "abc", "-r", self.path, "-t"])
+        self.assert_error(["-p", "abc", "-r", self.temp_repo(), "-t"])
 
     def test_bad_repo(self):
         """URL и путь к файлу проверяются."""
